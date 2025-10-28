@@ -1,0 +1,285 @@
+---
+title: "Assignment 1"
+author: "Nam Bui, 300665058"
+date: "01/08/2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(error=TRUE)
+```
+
+
+
+# Q1.
+
+### a. Number of adults living in the same household  
+- Variable type: Numerical, Integer  
+- R class: integer  
+- R type: integer  
+    
+### b. Preferred political party  
+- Variable type: Categorical, Nominal  
+- R class: factor / character  
+- R type: integer (if factor) / character (if character)  
+
+### c. Whether an individual voted in the most recent election  
+- Variable type: Categorical, Boolean / Numerical, Binary
+- R class: logical (if Boolean) / numeric (if Binary)  
+- R type: logical (if Boolean) / integer (if Binary)  
+
+### d. Water temperature  
+- Variable type: Numerical, Continuous  
+- R class: numeric  
+- R type: double  
+
+### e. Self-reported level of perceived stress, from none to very high  
+- Variable type: Categorical, Ordinal  
+- R class: ordered factor / character  
+- R type: integer (if ordered factor) / character (if character)  
+    
+    
+    
+# Q2.
+
+```{r}
+y <- c("Fred" = 5,"Wilma" = 1,"Betty" = 8,"Barney" = 3)
+```
+### a. 
+```{r}
+# Get elements in y with values greater than 3
+y[y>3]
+```
+### b.
+```{r}
+# Get the names of the elements in y with values equal to 3
+names(y[y==3])
+```
+### c.
+```{r}
+# Get the positions of the elements with maximum values in y
+which(y==max(y))
+```
+### d.
+```{r}
+a <- c(5,2,3) # Simple vector
+z <- array(c(2,0,5,1,1,2), dim=c(3,2)) # 2D 3x2 array 
+a
+z
+```
+### e.
+```{r}
+# t(z) returns the transposition of matrix z
+tz <- t(z)
+tz
+```
+### f.
+R computes `2*z` (z is presumably the above 3x2 matrix) by applying the "times 2" mathematical operation on each of the elements in z, and use those results to construct a matrix of the same dimensions.
+
+
+
+# Q3.
+
+### a.
+```{r}
+dot_product <- function(x,y) {
+  valid <- FALSE
+  result <- 0
+  
+  # Loop through all positions of vector x (presuming x and y are the same length)
+  for (i in 1:length(x)) { 
+    if (!is.na(x[i]) && !is.na(y[i])) {
+      
+      # If both positions are not NA, add their product to the result
+      result <- result + x[i]*y[i] 
+      valid <- TRUE
+    }
+  }
+  
+  # If still hasn't found a valid pair, print warning message 
+  if (!valid) stop("No valid pairs of values to compute the product.") 
+  return(result)
+}
+```
+### b.
+```{r}
+a <- c(NA,2,NA)
+b <- c(1,NA,5)
+dot_product(a,b)
+```
+### c.
+```{r}
+a <- c(5,2,1,NA,1)
+b <- c(1,NA,5,2,4)
+dot_product(a,b)
+```
+### d.
+```{r}
+dot_product <- function(x,y) {
+  
+  # If x and y are not the same length, print warning message
+  if (length(x)!=length(y)) stop("Vectors must be the same length.")
+  valid <- FALSE
+  result <- 0
+  
+  # Loop through all positions of vector x (presuming x and y are the same length)
+  for (i in 1:length(x)) { 
+    if (!is.na(x[i]) && !is.na(y[i])) {
+      
+      # If both positions are not NA, add their product to the result
+      result <- result + x[i]*y[i] 
+      valid <- TRUE
+    }
+  }
+  
+  # If still hasn't found a valid pair, print warning message 
+  if (!valid) stop("No valid pairs of values to compute the product.") 
+  return(result)
+}
+```
+### e.
+```{r}
+c <- c(1,NA,5,2)
+dot_product(a,c)
+```
+
+
+
+# Q4.
+
+### a.
+```{r}
+dinos <- read.csv("dinosaurs.csv")
+```
+### b.
+```{r}
+dim(dinos)
+```
+### c.
+```{r}
+dinos[1:4,]
+```
+### d.
+```{r}
+# Replace empty strings in diet with NA
+dinos$diet[dinos$diet==""] <- NA
+# Count number of NA occurrences after replacement
+sum(is.na(dinos$diet))
+```
+### e.
+```{r}
+is.factor(dinos$diet)
+diet_factor <- factor(dinos$diet, levels=c("herbivorous", "carnivorous", "omnivorous"))
+```
+### f.
+```{r}
+boxplot(dinos$length_m ~ diet_factor,
+        main = "Length by Diet Type (in meters)", # title
+        xlab = "Diet", # x-axis label
+        ylab = "Length (meters)") # y-axis label
+```
+
+
+
+# Q5.
+`x=y`: This is an assignment statement that assigns a value of y to x. While it can work for general assignments, it is discouraged in R style, and is preferably used for assigning values to function arguments.
+`x==y`: This is an element-wise comparison that returns either TRUE if the element of x is equal to the corresponding element of y, or FALSE otherwise, for each pair of elements.   
+`x<-y`: This is an assignment statement that assigns a value of y to x, and is the preferred assignment operator in R code used to assign values to variables.
+`x<(-y)`: This is an element-wise comparison that returns either TRUE if the element of x is less than the negative of the corresponding element of y, or FALSE otherwise, for each pair of elements.  
+`x^(-y)`: This is a element-wise power operation that returns a vector where each element of x is raised to the power of the negative of the corresponding element of y
+
+
+
+# Q6.
+```{r}
+library(dplyr)
+data("starwars")
+```
+### a. 
+```{r}
+hist(starwars$height,
+     main = "Histogram of Star Wars Characters' Height",
+     xlab = "Height (cm)")
+```
+### b.
+```{r}
+plot(starwars$height, starwars$mass,
+     main = "Scatterplot of Height vs Mass",
+     xlab = "Height (cm)",
+     ylab = "Weight (kg)")
+```
+Comment: Generally, taller characters tend to be heavier, except for one instance whose weight is disproportionately high relative to their height.
+### c.
+```{r}
+boxplot(starwars$height ~ starwars$gender,
+        main = "Boxplot of Star Wars Characters' Height by Gender",
+        xlab = "Gender",
+        ylab = "Height (cm)",
+        col = "blue")
+```
+### d.
+```{r}
+Num_homeworld <- table(starwars$homeworld)
+Cat1entri <- names(Num_homeworld)[Num_homeworld == 1]
+starwars$homeworld2 <- ifelse(starwars$homeworld %in% Cat1entri, "Other", starwars$homeworld)
+
+# Create a contingency table
+counts <- table(starwars$gender, starwars$homeworld2)
+
+# Draw barplot with legend
+barplot(counts,
+        beside = TRUE, # To make grouped bar chart instead of stacked
+        legend.text = TRUE, # Enable legend
+        main = "Counts of Characters by Gender and Homeworld2",
+        xlab = "Homeworld",
+        ylab = "Count",
+        las = 2)  # Rotate x-axis labels for readability
+```
+
+# Q7.
+
+### Error 1:
+```{r eval=FALSE}
+# Define x
+x <- matrix(c(3,0,5,6,NA 3), ncol = 2)
+```
+- Error: Missing comma between `NA` and `3`
+- Fix: Add a comma between `NA` and `3`
+```{r}
+x <- matrix(c(3,0,5,6,NA,3), ncol = 2)
+x
+```
+### Error 2:
+```{r eval=FALSE}
+# Store the second column of x as a new object called y
+y <- x[2]
+```
+- Error: `x[2]` only retrieves the second element from the first column, not the entire second column
+- Fix: use `x[,2]` (the blank before the comma indicates that the operation should cover all rows the the second column)
+```{r}
+y <- x[,2]
+y
+```
+### Error 3:
+```{r eval=FALSE}
+# Calculate the mean value of y after excluding NA entries
+mean_y <- mean(y, na.remove=TRUE)
+```
+- Error: `na.remove` is not a valid argument for the `mean()` function
+- Fix: use `na.rm` instead
+```{r}
+mean_y <- mean(y, na.rm=TRUE)
+mean_y
+```
+### Error 4:
+```{r eval=FALSE}
+# Fetch the entries of y that are bigger or equal to 2
+y[y => 2]
+```
+- Error: The `=>` is not a valid conditional operator
+- Fix: Use the "greater than or equal to" conditional operator `>=`
+```{r}
+y[y >= 2]
+```
+
+

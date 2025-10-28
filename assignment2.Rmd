@@ -1,0 +1,293 @@
+---
+title: 'assignment2'
+author: 'buinam'
+date: '2025-09-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+# PART 1
+
+## Q1
+
+### a.
+```{r}
+# Read file into df
+netflix <- read.csv('Netflix.csv', stringsAsFactors=FALSE)
+str(netflix)
+```
+
+### b.
+```{r eval=TRUE}
+# Convert into R date format
+netflix$date_added2 <- as.Date(netflix$date_added, format = '%d-%b-%y')
+
+# Display first 6 rows of newly added column
+head(netflix$date_added2, 6)
+```
+
+### c.
+```{r}
+# Convert weekday_added into ordered factor
+netflix$weekday_added <- weekdays(netflix$date_added2)
+netflix$weekday_added <- factor(netflix$weekday_added,
+                                levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+                                ordered = TRUE)
+head(netflix$weekday_added)
+``` 
+
+### d.
+```{r}
+# Count the number of rows which have "Drama" in the string value for genres
+length(grep('Drama', netflix$genres, ignore.case = TRUE))
+``` 
+
+### e.
+```{r eval=TRUE}
+# Remove rows with NA or whitespace values for director
+netflix_with_directors <- netflix[ !is.na(netflix$director) & nzchar(trimws(netflix$director)), ]
+
+# Code type as factor
+netflix_with_directors$type <- factor(netflix_with_directors$type,
+                       levels = c('Movie', 'TV Show'))
+
+# Count the number of titles for each combination of director and type 
+director_counts <- tapply(netflix_with_directors$title, list(netflix_with_directors$director, netflix_with_directors$type), length)
+
+# Return name of director with max count of Movie 
+most_movies_director <- names(which.max(director_counts[, "Movie"]))
+num_movies <- max(director_counts[, "Movie"], na.rm = TRUE)
+
+# Return name of director with max count of TV Show
+most_tv_director <- names(which.max(director_counts[, "TV Show"]))
+num_tvshows <- max(director_counts[, "TV Show"], na.rm = TRUE)
+
+cat("Director with the most Movies:", most_movies_director, "-", num_movies, "\n")
+cat("Director with the most TV Shows:", most_tv_director, "-", num_tvshows, "\n")
+``` 
+
+
+
+## Q2
+
+### a.
+```{r}
+library(dplyr)
+
+tab_directors <- netflix %>%
+  filter(!is.na(director) & nzchar(trimws(director))) %>%  # Remove NA and whitespace director values
+  group_by(director) %>%  # Group by director
+  summarise(  # Create new summary table with these columns
+    Num = n(),  # Num: number of rows in the group
+    Perc_movies = round((sum(type=='Movie')/Num)*100, 2),  # Perc_movies: percentage of titles that are movies, 0-100, 2 d.p.
+    Range_release_year = paste(min(release_year, na.rm=TRUE), max(release_year, na.rm=TRUE), sep = "-"),  # Range_release_year: "[min]-[max]"
+    Mean_duration = mean(duration, na.rm=TRUE),  # Mean_duration: mean of duration
+  ) %>%
+  arrange(desc(Num)) %>%  # Sort by descending Num
+  filter(Num>8)  # Filter for rows with Num > 8
+
+tab_directors
+  
+```
+
+### b.
+```{r}
+df_top_directors <- netflix %>%
+  filter(director %in% tab_directors$director,  # Filter for director values that occur in tab_directors
+         rating %in% c('TV-MA','TV-14')) %>%  # Filter for rating values that are either "TV-MA" or "TV-14"
+  select(show_id, type, title, director, country, release_year, rating, duration)  # Select columns
+
+head(df_top_directors)
+```
+
+### c.
+```{r}
+library(ggplot2)
+
+df_top_directors %>%
+  group_by(release_year, rating) %>%  
+  summarise(num_titles = n()) %>%  # Compute number of titles for each combination of release_year and rating
+  ggplot(aes(x=release_year, y=num_titles)) +
+  geom_line() +  # Line plot 
+  facet_wrap(~rating) +  # Make subplots by rating
+  labs(x='Release Year', y='Number of Titles', title='Number of Titles by Release Year, Faceted by Rating')
+```
+
+### d.
+```{r}
+df_top_directors <- df_top_directors %>%
+  mutate(long_duration = duration>120)  # Create a new long_duration column, with boolean values that are TRUE if duration > 120
+
+head(df_top_directors)
+```
+
+### e.
+```{r}
+df_top_directors %>%
+  group_by(long_duration) %>%
+  summarise(num_titles = n()) %>%
+  ggplot(aes(x=factor(long_duration, labels=c('Up to 2hrs','More than 2hrs')), y=num_titles)) +  # Rename factor level labels to display in plot 
+  geom_bar(stat = 'identity') +  # Bar plot
+  labs(x='Duration', y='Number of Titles', title='Number of Titles by Duration Category')
+```
+
+
+
+## Q3
+
+### a.
+```{r}
+library(dplyr)
+library(ggplot2)
+
+data(starwars)
+
+starwars %>%
+  filter(!is.na(height)) %>%
+  ggplot(aes(x=height)) +
+  geom_histogram(bins=11) +  # Histogram with 11 bins
+  labs(x='Height (cm)', y='Count', title = 'Histogram of Star Wars Characters\' Heights')
+```
+
+### b.
+```{r}
+starwars_filtered <- starwars %>%
+  filter(!is.na(height) & !is.na(mass) & !is.na(sex))  # Filter out missing values
+
+starwars_filtered %>%
+  ggplot(aes(x=height, y=mass, color=sex)) +  # Height on the x-axis, Mass on the y-axis, Sex as the color of the points
+  geom_jitter() +  # Scatter plot with jitter
+  labs(x = 'Height (cm)', y = 'Mass (kg)', title = 'Scatterplot of Height vs Mass (with outlier)')
+
+outlier_mass <- max(starwars_filtered$mass, na.rm=TRUE)
+starwars_no_outlier <- starwars_filtered %>%
+  filter(mass != outlier_mass)   # Filter out only the largest value, which is the outlier
+
+starwars_no_outlier %>%
+  ggplot(aes(x=height, y=mass, color=sex)) +
+  geom_jitter() +
+  labs(x = 'Height (cm)', y = 'Mass (kg)', title = 'Scatterplot of Height vs Mass (without outlier)')
+
+```
+
+
+
+
+
+
+
+# PART 2
+
+## Q1
+
+### a.
+```{r}
+library(DBI)
+library(RSQLite)
+
+# Remove any iucn.sqlite from file system
+if (file.exists("iucn.sqlite")) file.remove("iucn.sqlite")
+
+# Create and connect to a new SQLite database iucn.sqlite
+con <- dbConnect(RSQLite::SQLite(), "iucn.sqlite")
+```
+
+### b.
+```{r}
+# Read files with UTF-8 encoding
+taxon <- read.csv("iucn_taxon.csv", encoding="UTF-8", header=TRUE)
+distribution <- read.csv("iucn_distribution.csv", encoding="UTF-8", header=TRUE)
+vernacular <- read.csv("iucn_vernacular.csv", encoding="UTF-8", header=FALSE)
+```
+
+### c.
+```{r}
+# Copy data into new tables in SQLite database
+dbWriteTable(con, "taxon", taxon, overwrite=TRUE)
+dbWriteTable(con, "distribution", distribution, overwrite=TRUE)
+```
+
+### d.
+```{r}
+# Look at a small subset of distribution and vernacular tables
+head(distribution, 10)
+head(vernacular, 10)
+
+# Check uniqueness:
+# If the number of unique values in id is equal to the number of rows,
+# All of the id values are unique, and id can be used as a primary key 
+id_distribution_can_prim_key <- length(unique(distribution$id)) == nrow(distribution)
+id_vernacular_can_prim_key <- length(unique(vernacular$V1)) == nrow(vernacular)
+
+cat("ID in distribution can be primary key: ", id_distribution_can_prim_key, "\n")
+cat("ID in vernacular can be primary key: ", id_vernacular_can_prim_key, "\n")
+```
+
+### e.
+```{sql connection=con}
+DROP TABLE IF EXISTS vernacular
+```
+```{sql connection=con}
+CREATE TABLE vernacular (
+  id INT,
+  is_preferred_name TEXT,
+  language TEXT,
+  vernacular_name TEXT
+)
+```
+
+### f.
+```{r}
+# Rename columns in vernacular
+names(vernacular) <- c("id", "is_preferred_name", "language", "vernacular_name")
+
+# Append data frame vernacular to database table vernacular using R code
+dbWriteTable(con, "vernacular", vernacular, append = TRUE)
+```
+
+### g.
+```{sql connection=con}
+-- Delete rows with underscore in taxon_entry_id  from taxon
+DELETE FROM taxon
+WHERE taxon_entry_id LIKE "%\_%" ESCAPE "\"
+```
+
+### h.
+```{sql connection=con, output.var="iucn"}
+-- Filter for the row with vernacular_name="New Zealand Fur Seal" in the joint table of distribution and vernacular, selecting only columns id (distribution.id, threat_status, and vernacular_name)
+-- And save output to a new "iucn" variable
+SELECT distribution.id, threat_status, vernacular_name 
+FROM distribution INNER JOIN vernacular
+ON distribution.id = vernacular.id
+WHERE vernacular_name = "New Zealand Fur Seal"
+```
+```{r}
+iucn
+```
+
+### i. 
+```{sql connection=con}
+DROP TABLE IF EXISTS kingdom_counts
+```
+```{sql connection=con}
+-- Create table with 2 columns kingdom, count and number of rows = number of unique kingdoms (grouped by kingdom)
+-- Sort by descending order of count
+CREATE TABLE kingdom_counts
+AS
+SELECT kingdom, COUNT(*) AS count
+FROM taxon
+GROUP BY kingdom
+ORDER BY count DESC
+```
+```{sql connection=con}
+SELECT * from kingdom_counts
+```
+
+
+```{r}
+# Disconnect from the database
+dbDisconnect(con)
+```

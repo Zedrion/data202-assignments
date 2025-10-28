@@ -1,0 +1,201 @@
+---
+title: "assignment3"
+author: "buinam"
+date: "2025-09-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+# Q1.
+
+## a. 
+
+For a single random draw from the deck:
+- The probability of selecting the card numbered 42 is 1/100, or 0.01, as there are only one of those in 100 cards in the deck,
+- The probability of selecting a card whose number is a multiple of 10 is 10/100, or 0.1, as there are 10 of those in 100 cards in the deck. 
+
+## b.
+
+```{r}
+riffle_shuffle <- function(deck_size, seed=0) {
+  set.seed(seed)
+  
+  # Warning message if length(deck_size) > 1
+  if (length(deck_size) > 1) {
+    warning("Length of deck_size vector greater than 1")
+    deck_size <- deck_size[1]
+  }
+  
+  divide_point <- sample(40:60, 1) # Divide point for splitting the deck 
+  first <- seq(1, divide_point) # Indices of first half of deck 
+  second <- seq(divide_point+1, deck_size) # Indices of second half of deck 
+  
+  shuffled <- c() # Placeholder 
+  while (length(first) > 0 && length(second) > 0) {
+    
+    # Take 1-4 cards from first half, not more than what is left
+    first_size <- sample(c(1,2,3,4), 1, prob = c(3,3,1,1)) # Choose how many cards to take, with relative probabilities
+    first_size <- min(length(first), first_size) # Make sure we don't take more than what is left
+    first_indices <- first[1:first_size] # Save the first first_size indices 
+    first <- first[-(1:first_size)] # Remove the first first_size indices from the first half
+    shuffled <- c(shuffled, first_indices) # Append the indices to shuffled
+    
+    # Take 1-4 cards from second half, not more than what is left
+    second_size <- sample(c(1,2,3,4), 1, prob = c(3,3,1,1))
+    second_size <- min(length(second), second_size) 
+    second_indices <- second[1:second_size] 
+    second <- second[-(1:second_size)] 
+    shuffled <- c(shuffled, second_indices) 
+  }
+  
+  # When done, take leftovers and put them at the bottom of the shuffled deck 
+  if (length(first) > 0) {
+    shuffled <- c(shuffled, first)
+  }
+  if (length(second) > 0) {
+    shuffled <- c(shuffled, second)
+  }
+  
+  return(shuffled)
+}
+```
+
+## c.
+
+Lines in the function that would be affected by setting the seed at the beginning:
+
+```{r eval=FALSE}
+divide_point <- sample(40:60, 1)
+first_size <- sample(c(1,2,3,4), 1, prob = c(3,3,1,1))
+second_size <- sample(c(1,2,3,4), 1, prob = c(3,3,1,1))
+```
+
+## d.
+
+```{r}
+once_shuffled <- riffle_shuffle(100, seed=1)
+twice_shuffled <- once_shuffled[riffle_shuffle(100, seed=2)]
+thrice_shuffled <- twice_shuffled[riffle_shuffle(100, seed=3)]
+thrice_shuffled
+```
+
+## e. 
+
+```{r}
+plot(1:100, thrice_shuffled, 
+     main="Deck after 3 riffle shuffles",
+     xlab="Card index", 
+     ylab="Card number")
+```
+
+Comment: The deck seems to have been shuffled insufficiently, as there are still trends visible in the plot - straight lines that go from bottom left to top right that means the original order is still present to an extent.
+
+## f.
+
+```{r}
+seven_shuffled <- thrice_shuffled
+
+for (s in 4:7) {
+  seven_shuffled <- seven_shuffled[riffle_shuffle(length(seven_shuffled), seed=s)]
+}
+
+plot(1:100, seven_shuffled,
+     main="Deck after 7 riffle shuffles",
+     xlab="Card index",
+     ylab="Card number")
+```
+
+Comment: The deck seems to have been shuffled sufficiently, as there are no distinct patterns visible in the plot, and the values are evenly distributed.
+
+
+
+# Q2.
+
+## a.
+
+```{r}
+set.seed(0)
+library(MASS)
+
+# Set means and covariance matrices
+mu1 <- c(4,2)
+Sigma1 <- matrix(c(3,0,0,1), nrow=2, ncol=2, byrow=TRUE)
+mu2 <- c(0,0.5)
+Sigma2 <- matrix(c(1,-0.5,-0.5,1), nrow=2, ncol=2, byrow=TRUE)
+mu3 <- c(3,5)
+Sigma3 <- matrix(c(1,0.8,0.8,1), nrow=2, ncol=2, byrow=TRUE)
+
+# Generate a vector of N samples of 1:3 with corresponding probabilities
+N <- 10000
+clusters <- sample(1:3, N, replace=TRUE, prob=c(0.3,0.6,0.1))
+
+# Generate the samples and populate s for each distribution 
+s <- matrix(NA, nrow=N, ncol=2)
+s[clusters==1, ] <- mvrnorm(sum(clusters==1), mu1, Sigma1) # For the positions in s where its corresponding position in clusters is 1, take a sample from the first distribution
+s[clusters==2, ] <- mvrnorm(sum(clusters==2), mu2, Sigma2)
+s[clusters==3, ] <- mvrnorm(sum(clusters==3), mu3, Sigma3)
+```
+
+## b.
+
+```{r}
+s_mean <- colMeans(s) # Sample mean: Vector of column means 
+s_covmat <- cov(s) # Covariance matrix: cov() treats rows as observations and columns as variables by default
+
+s_mean
+s_covmat
+```
+
+The sample mean and sample covariance matrix estimates the population mean $\mu$ and population covariance matrix $\Sigma$ of the underlying distribution.
+
+## c.
+
+```{r}
+library(fossil)
+
+k2 <- kmeans(s, centers=2, nstart=100)
+k3 <- kmeans(s, centers=3, nstart=100)
+k4 <- kmeans(s, centers=4, nstart=100)
+ari2 <- adj.rand.index(k2$cluster, clusters)
+ari3 <- adj.rand.index(k3$cluster, clusters)
+ari4 <- adj.rand.index(k4$cluster, clusters)
+
+paste("Adjusted Rand Index of k-means with 2 clusters: ", ari2)
+paste("Adjusted Rand Index of k-means with 3 clusters: ", ari3)
+paste("Adjusted Rand Index of k-means with 4 clusters: ", ari4)
+```
+
+As the k-means model with 2 clusters has the highest Adjusted Rand Index (even though it has fewer clusters than the true number), it is the best fit to the true data.
+
+## d.
+
+```{r}
+true_colors <- c("red", "green", "blue")
+plot(s,
+     main="True simulated clusters",
+     xlab="x",
+     ylab="y",
+     col=true_colors[clusters], # Map the values of the elements in clusters to the corresponding index in the color list e.g. 1 -> red
+     pch=16)
+legend("topright",
+       legend=c("Cluster 1", "Cluster 2", "Cluster 3"),
+       col=true_colors,
+       pch=16)
+
+k2_colors <- c("darkgray","black") # Set a different color palette for k2 results
+plot(s,
+     main="k-means clusters (k=2)",
+     xlab="x",
+     ylab="y",
+     col=k2_colors[k2$cluster],
+     pch=16)
+legend("topright",
+       legend=c("k-means cluster 1", "k-means cluster 2"),
+       col=k2_colors,
+       pch=16)
+```
+
+The k-means clustering with k=2 does not reflect the true underlying structure of the data. Forcing k-means to use 2 clusters merged groups together (the blue and red groups into the gray). The new groups don't seem well-separated, and the new merged cluster don't seem compact. However, this is not unexpected, as there is overlap in the data points - specifically, the middle where all 3 clusters have members - and k-means cannot handle ambiguous points well.
