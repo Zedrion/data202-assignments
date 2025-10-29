@@ -2,7 +2,7 @@
 
 ## Overview 
 
-A collection of R Markdown (`.Rmd`) files, each a small project, exploring data manipulation, analysis, and visualization using R and SQL.
+A collection of R Markdown (`.Rmd`) files, each a small project, exploring data manipulation, analysis, and visualization using R and SQL. Completed as part of **DATA202 - Data Management and Programming** (2025) course projects.
 
 Many processes in working with data are showcased, including:
 - Data wrangling with `dplyr` and base R
